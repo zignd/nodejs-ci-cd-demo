@@ -3,21 +3,52 @@ name: Node.js CI
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
-  build:
+  tests:
+    name: Tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [16.x]
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm ci
-    - run: npm test
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Run tests
+        run: npm ci && npm test
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    env:
+      HEROKU_ACCOUNT_EMAIL: zignd@live.com
+      HEROKU_APP_NAME: zignd-app-test-1
+    needs:
+      - tests
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Setup Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+          echo "machine api.heroku.com
+            login $HEROKU_ACCOUNT_EMAIL
+            password ${{ secrets.HEROKU_API_KEY }}
+          machine git.heroku.com
+            login $HEROKU_ACCOUNT_EMAIL
+            password ${{ secrets.HEROKU_API_KEY }}" > ~/.netrc
+          heroku container:login
+
+      - name: Deploy to Heroku
+        run: |
+          heroku container:push api -a $HEROKU_APP_NAME
+          heroku container:release api -a $HEROKU_APP_NAME
