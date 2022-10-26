@@ -1,7 +1,9 @@
-name: Node.js CI
+name: Tests and Deploy
 
 on:
   push:
+    branches: [ "main" ]
+  pull_request:
     branches: [ "main" ]
 
 jobs:
@@ -23,6 +25,7 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    if: github.ref_name == 'main'
     env:
       HEROKU_ACCOUNT_EMAIL: zignd@live.com
       HEROKU_APP_NAME: zignd-app-test-1
